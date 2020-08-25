@@ -1,0 +1,6 @@
+{
+    "srcDir":"D:\\tmp\\src_test",
+    "desDir":"D:\\tmp\\des_test",
+    "ignoreType":"mkv,mp4",
+    "override": 1
+}
