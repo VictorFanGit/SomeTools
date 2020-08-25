@@ -41,8 +41,8 @@ def copy_all_files(s_dir, d_dir):
         # 判断路径是否是一个文件目录或者文件
         # 如果是文件目录，继续递归
         if os.path.isdir(s_path):
-            if not os.path.exists(d_dir):
-                os.mkdir(d_path)
+            if not os.path.exists(d_path):
+                os.makedirs(d_path)
             copy_all_files(s_path, d_path)
         if os.path.isfile(s_path):
             copy_file(s_path, d_path)
@@ -73,6 +73,5 @@ if __name__ == "__main__":
         print('源目录不存在！')
         exit(1)
     if not os.path.isdir(des_dir):
-        print('目标目录不存在！')
-        exit(1)
+        os.makedirs(des_dir)
     copy_all_files(src_dir, des_dir)
