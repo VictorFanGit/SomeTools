@@ -2,15 +2,24 @@
 import os
 import json
 import shutil
+import logging
 
 src_dir = ""
 des_dir = ""
 ignore_type = []
 override = False
+file_count = 0
 
 current_dir = os.path.dirname(__file__)
 conf_path = os.path.join(current_dir, 'config.json')
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler("running.log", mode='a',encoding='utf-8')
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+handler.setLevel(logging.INFO)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 def load_config():
     global src_dir, des_dir, ignore_type, override
@@ -49,29 +58,31 @@ def copy_all_files(s_dir, d_dir):
 
 
 def copy_file(s_path, d_path):
-    global ignore_type
+    global ignore_type, file_count
     file_type = os.path.splitext(s_path)[-1][1:]
     if file_type in ignore_type:
-        if os.path.exists(d_path):
-            if not override:
-                pass
-        else:
+        if not os.path.exists(d_path):
             with open(d_path, 'a'):
-                pass
+                file_count = file_count + 1
     else:
-        try:
-            shutil.copy(s_path, d_path)
-        except IOError as e:
-            print("拷贝文件失败. %s" % e)
-        except:
-            print("拷贝文件发生未知错误:", sys.exc_info())
+        if not os.path.exists(d_path) or override:
+            try:
+                shutil.copy(s_path, d_path)
+                file_count = file_count + 1
+            except IOError as e:
+                print('拷贝文件失败. %s' % e)
+                logger.warning('拷贝文件失败: %s' % e.msg)
 
 
 if __name__ == "__main__":
     load_config()
+    logger.info('start...')
     if not os.path.isdir(src_dir):
         print('源目录不存在！')
+        logger.error('源目录不存在！')
         exit(1)
     if not os.path.isdir(des_dir):
         os.makedirs(des_dir)
     copy_all_files(src_dir, des_dir)
+    print("复制文件数量：" + str(file_count))
+    logger.info("复制文件数量：" + str(file_count))
