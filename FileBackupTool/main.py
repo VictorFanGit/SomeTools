@@ -38,6 +38,7 @@ def load_config():
 
 
 def copy_all_files(s_dir, d_dir):
+    sum = 0
     # 列出文件夹下所有的目录与文件
     list_file = os.listdir(s_dir)
 
@@ -52,13 +53,51 @@ def copy_all_files(s_dir, d_dir):
         if os.path.isdir(s_path):
             if not os.path.exists(d_path):
                 os.makedirs(d_path)
-            copy_all_files(s_path, d_path)
+            sum += copy_all_files(s_path, d_path)
         if os.path.isfile(s_path):
-            copy_file(s_path, d_path)
+            sum += copy_file(s_path, d_path)
+    return sum    
+
+def dir_size(d):
+    '''
+    定义计算指定目录大小的函数
+    '''
+    sum = 0
+    #判断指定目录是否为文件
+    if os.path.isfile(d):
+        sum+=os.path.getsize(d)
+    #判断指定目录是否为文件夹
+    if os.path.isdir(d):
+        dir_list = os.listdir(d)    
+        for f in dir_list:
+            file = os.path.join(d,f)
+            if os.path.isfile(file):
+                sum+=os.path.getsize(file)
+            if os.path.isdir(file):
+                sum+=dir_size(file)#递归统计
+    return sum
+
+def convert_unit(byte_size):
+    if byte_size > 1024:
+        k_size = int(byte_size / 1024)
+        if k_size > 1024:
+            m_size = int(k_size / 1024)
+            if m_size > 1024:
+                g_size = m_size / 1024
+                g_size = round(g_size, 1)
+                return str(g_size) + 'G'
+            else:
+                return str(m_size) + 'M'    
+
+        else:
+            return str(int(k_size)) + 'K'
+    else:
+        return str(int(byte_size)) + 'B'
 
 
 def copy_file(s_path, d_path):
     global ignore_type, file_count
+    copy_size = 0
     file_type = os.path.splitext(s_path)[-1][1:]
     if file_type in ignore_type:
         if not os.path.exists(d_path):
@@ -69,9 +108,11 @@ def copy_file(s_path, d_path):
             try:
                 shutil.copy(s_path, d_path)
                 file_count = file_count + 1
+                copy_size = os.path.getsize(s_path)
             except IOError as e:
                 print('拷贝文件失败. %s' % e)
-                logger.warning('拷贝文件失败: %s' % e.msg)
+                logger.warning('拷贝文件失败: %s' % e)
+    return copy_size
 
 
 if __name__ == "__main__":
@@ -83,6 +124,12 @@ if __name__ == "__main__":
         exit(1)
     if not os.path.isdir(des_dir):
         os.makedirs(des_dir)
-    copy_all_files(src_dir, des_dir)
+    copy_size = copy_all_files(src_dir, des_dir)
+    copy_size_str = convert_unit(copy_size)
+    print("复制文件总大小：" + copy_size_str)
+    logger.info("复制文件总大小：" + copy_size_str)
     print("复制文件数量：" + str(file_count))
     logger.info("复制文件数量：" + str(file_count))
+    d_size = convert_unit(dir_size(des_dir))
+    print("目标目录大小：" + d_size)
+    logger.info("目标目录大小：" + d_size)
