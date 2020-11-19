@@ -113,12 +113,6 @@ def process_all_files():
     return process_count, failed_count
 
 
-# def convert_local_url_to_oss(local_pic_url):
-#     global net_img_base_url
-#     head, tail = os.path.split(local_pic_url)
-#     return '(' + net_img_base_url + '/' + tail
-
-
 def convert_oss_url_to_local(oss_pic_url):
     global local_img_folder
     head, tail = os.path.split(oss_pic_url)
@@ -181,8 +175,6 @@ def convert_pic_url_to_oss(oss_file_path, file_content):
                     else:
                         new_fc = re.sub(local_pic_url, pic_url, fc)
                         c_f.write(new_fc)
-                        # PicGo上传文件名按时间秒为单位，避免同名文件
-                        time.sleep(1)
             else:
                 c_f.write(fc)
     return isSuccess

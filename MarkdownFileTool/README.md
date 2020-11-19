@@ -44,7 +44,7 @@ https://github.com/Molunerfinn/PicGo/releases
 
 ![enable-server20201118171716](/enable-server20201118171716.png)
 
-![rename-20201118171758](/rename-20201118171758.png)
+
 
 ![upload-config20201118172008](/upload-config20201118172008.png)
 
@@ -66,3 +66,4 @@ python main.py
 
 #### 更新记录
 - 2020-11-18：实现基本转换功能
+- 2020-11-19：优化图片上传处理
