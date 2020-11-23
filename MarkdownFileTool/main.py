@@ -29,7 +29,7 @@ def load_config():
     global src_dir, net_img_base_url, local_img_folder,backup_dir
     with open(conf_path, 'r', encoding='utf-8') as f:
         json_data = json.load(f)
-        print('===config info===')
+        print('===配置信息===')
         print(json_data)
         if json_data['srcDir'] == None or json_data['srcDir'] == ".":
             src_dir = os.path.dirname(__file__)
@@ -52,7 +52,7 @@ def copy_img_folder(src_dir, des_dir):
         try:
             shutil.copy(s_path, d_path)
         except IOError as e:
-            log_util.logger.warning('Failed to copy file: %s' % e)
+            log_util.logger.warning('拷贝文件出错: %s' % e)
 
 def move_orignal_files_to_backup():
     global backup_dir, src_dir, local_img_folder
@@ -76,8 +76,8 @@ def process_all_files():
     failed_count = 0
     global src_dir, file_types, local_img_folder, net_img_base_url,local_pattern,oss_pattern
 
-    local_pattern = re.compile(r'\('+ local_img_folder + r'[\S|\s]+\)')
-    oss_pattern = re.compile(r'\(' + net_img_base_url + r'[\S|\s]+\)')
+    local_pattern = re.compile(r'\!\[[\S|\s]*\]\('+ local_img_folder + r'[\S|\s]+\)')
+    oss_pattern = re.compile(r'\!\[[\S|\s]*\]\(' + net_img_base_url + r'[\S|\s]+\)')
 
     oss_dir = os.path.join(src_dir, 'net')
     local_dir = os.path.join(src_dir, 'local')
@@ -113,12 +113,6 @@ def process_all_files():
     return process_count, failed_count
 
 
-def convert_oss_url_to_local(oss_pic_url):
-    global local_img_folder
-    head, tail = os.path.split(oss_pic_url)
-    return '(' + local_img_folder + '/' + tail
-
-
 def upload_pic_to_oss(pic_path):
     headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36",
@@ -134,28 +128,48 @@ def upload_pic_to_oss(pic_path):
         else:
             return None
     else:
-        log_util.logger.error('failed to upload pic:' + pic_path)
+        log_util.logger.error('上传图片文件出错:' + pic_path)
         return None
 
-def get_pic_by_url(lists):
-    global src_dir, local_img_folder
-    img_full_dir = os.path.join(src_dir, "local", local_img_folder)
-    if not os.path.exists(img_full_dir):
-        os.makedirs(img_full_dir)
-    for url in lists:
-        url = url[1:-1].strip()
-        filename = url.split('/')[-1]
-        filepath = os.path.join(img_full_dir, filename)
-        if os.path.exists(filepath):
-            log_util.logger.info("File have already exist. skip")
+
+def rename_pic_file(file_path, rename):
+    head, tail = os.path.split(file_path)
+    split_arr = tail.split('.')
+    if len(split_arr) < 2:
+        log_util.logger.error("文件名格式错误：" + file_path)
+        return file_path
+    name = split_arr[0]
+    suffix = split_arr[1]
+    if tail == name:
+        return file_path
+    rename_path = os.path.join(head, rename + '.' + suffix)
+    os.rename(file_path, rename_path)
+    return rename_path
+
+
+def rename_and_upload_pic(c_f, fc, local_pic_urls):
+    global src_dir
+    isSuccess = True
+    for local_pic_url in local_pic_urls:
+        split_arr = local_pic_url.split(']')
+        if len(split_arr) == 2:
+            pic_name = split_arr[0][2:]
+            local_pic_url = split_arr[1][1:-1].strip()
+            pic_path = os.path.join(src_dir, local_pic_url)
+            new_path = pic_path
+            if len(pic_name) > 0:
+                new_path = rename_pic_file(pic_path, pic_name)
+            pic_url = upload_pic_to_oss(new_path)
+            if pic_url == None:
+                isSuccess = False
+                c_f.write(fc)
+            else:
+                new_fc = re.sub(local_pic_url, pic_url, fc)
+                c_f.write(new_fc)
         else:
-            try:
-                #下载图片，并保存到文件夹中
-                urllib.request.urlretrieve(url,filename=filepath)
-                return True
-            except Exception as e:
-                log_util.logger.error("Error occurred when downloading file, error message:%s" %e)
-                return False
+            log_util.logger.error('图片地址格式错误！')
+            c_f.write(fc)
+    return isSuccess
 
 
 def convert_pic_url_to_oss(oss_file_path, file_content):
@@ -165,19 +179,52 @@ def convert_pic_url_to_oss(oss_file_path, file_content):
         for fc in file_content:
             local_pic_urls = re.findall(local_pattern, fc)
             if len(local_pic_urls) > 0:
-                for local_pic_url in local_pic_urls:
-                    local_pic_url = local_pic_url[1:-1].strip()
-                    pic_path = os.path.join(src_dir, local_pic_url)
-                    pic_url = upload_pic_to_oss(pic_path)
-                    if pic_url == None:
-                        isSuccess = False
-                        c_f.write(fc)
-                    else:
-                        new_fc = re.sub(local_pic_url, pic_url, fc)
-                        c_f.write(new_fc)
+                if not rename_and_upload_pic(c_f, fc, local_pic_urls):
+                    isSuccess = False
             else:
                 c_f.write(fc)
     return isSuccess
+
+
+def convert_oss_url_to_local(full_path):
+    global local_img_folder
+    head, tail = os.path.split(full_path)
+    return local_img_folder + '/' + tail
+
+
+def download_pic_and_rename(c_f, fc, oss_pic_urls):
+    global src_dir, local_img_folder
+    isSuccess = True
+    img_full_dir = os.path.join(src_dir, "local", local_img_folder)
+    if not os.path.exists(img_full_dir):
+        os.makedirs(img_full_dir)
+    for url in oss_pic_urls:
+        split_arr = url.split(']')
+        if len(split_arr) == 2:
+            pic_pre_name = split_arr[0][2:]
+            url = split_arr[1][1:-1].strip()
+            filename = pic_pre_name + url.split('.')[-1]
+            filepath = os.path.join(img_full_dir, filename)
+            if os.path.exists(filepath):
+                log_util.logger.info("图片文件已经存在，跳过！")
+            else:
+                try:
+                    #下载图片，并保存到文件夹中
+                    urllib.request.urlretrieve(url,filename=filepath)
+                    des_content = convert_oss_url_to_local(filepath)
+                    new_fc = re.sub(url, des_content, fc)
+                    c_f.write(new_fc)
+                except Exception as e:
+                    log_util.logger.error("下载图片出错:%s" %e)
+                    isSuccess = False
+                    c_f.write(fc)
+        else:
+            isSuccess = False
+            log_util.logger.error("下载图片出错:%s" %e)
+            c_f.write(fc)
+
+    return isSuccess 
+
 
 def convert_pic_url_to_local(local_file_path, file_content):
     global oss_pattern
@@ -186,12 +233,8 @@ def convert_pic_url_to_local(local_file_path, file_content):
         for fc in file_content:
             oss_pic_urls = re.findall(oss_pattern, fc)
             if len(oss_pic_urls) > 0:
-                if not get_pic_by_url(oss_pic_urls):
+                if not download_pic_and_rename(c_f, fc, oss_pic_urls):
                     isSuccess = False
-                for oss_pic_url in oss_pic_urls:
-                    des_content = convert_oss_url_to_local(oss_pic_url)
-                    new_fc = re.sub(oss_pic_url, des_content, fc)
-                    c_f.write(new_fc)
             else:
                 c_f.write(fc)
     return isSuccess
@@ -199,13 +242,13 @@ def convert_pic_url_to_local(local_file_path, file_content):
 
 if __name__ == "__main__":
     load_config()
-    log_util.logger.info('start...')
+    log_util.logger.info('开始...')
     if not os.path.isdir(src_dir):
         print('源目录不存在！')
         log_util.logger.error('源目录不存在！')
         exit(1)
     process_count, failed_count = process_all_files()
-    move_orignal_files_to_backup()
+    # move_orignal_files_to_backup()
     print("处理文件总数：" + str(process_count))
     print("处理失败文件数：" + str(failed_count))
     log_util.logger.info("处理文件总数：" + str(process_count))
