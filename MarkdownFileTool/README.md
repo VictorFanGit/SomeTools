@@ -1,12 +1,16 @@
 ---
-typora-root-url: img
+
 ---
 
 ### 批量处理md文档图片自动上传与下载
 
 #### 功能
 
-将输入目录下的所有md文档中的本地图片上传到网络中，需安装和配置picgo图片上传软件，将网络中的图片下载到本地，支持离线阅读。生成的文档放到local和net目录中，原始文件及图片保存到backup目录中
+将输入目录下的所有md文档中的本地图片上传到网络中，需安装和配置picgo图片上传软件，将网络中的图片下载到本地，支持离线阅读。生成的文档放到local和net目录中，原始文件及图片保存到backup目录中。
+
+系统架构如下：
+
+![MarkdowFileToolArch](img/MarkdowFileToolArch.jpg)
 
 #### 配置说明
 
@@ -42,15 +46,19 @@ https://github.com/Molunerfinn/PicGo/releases
 
 安装后的必要配置：
 
-![enable-server20201118171716](/enable-server20201118171716.png)
+![enable-server20201118171716](img/enable-server20201118171716.png)
 
 
 
-![upload-config20201118172008](/upload-config20201118172008.png)
+![upload-config20201118172008](img/upload-config20201118172008.png)
 
 
 
 #### 软件运行
+
+运行环境：python3.7及以上
+
+依赖包：requests （可用pip install requests 命令安装）
 
 以上配置完成之后，在软件目录下执行：
 
@@ -67,3 +75,4 @@ python main.py
 #### 更新记录
 - 2020-11-18：实现基本转换功能
 - 2020-11-19：优化图片上传处理
+- 2020-11-26：增加图片重命名功能

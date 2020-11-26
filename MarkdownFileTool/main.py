@@ -79,18 +79,20 @@ def process_all_files():
     local_pattern = re.compile(r'\!\[[\S|\s]*\]\('+ local_img_folder + r'[\S|\s]+\)')
     oss_pattern = re.compile(r'\!\[[\S|\s]*\]\(' + net_img_base_url + r'[\S|\s]+\)')
 
-    oss_dir = os.path.join(src_dir, 'net')
+    net_dir = os.path.join(src_dir, 'net')
     local_dir = os.path.join(src_dir, 'local')
     orig_img_dir = os.path.join(src_dir, local_img_folder)
-    if not os.path.isdir(oss_dir):
-        os.makedirs(oss_dir)
+    if not os.path.isdir(net_dir):
+        os.makedirs(net_dir)
     if not os.path.isdir(local_dir):
         os.makedirs(local_dir)
     if not os.path.isdir(orig_img_dir):
         os.makedirs(orig_img_dir)
 
     local_img_dir = os.path.join(local_dir, local_img_folder)
+    net_img_dir = os.path.join(net_dir, local_img_folder)
     copy_img_folder(orig_img_dir, local_img_dir)
+    copy_img_folder(orig_img_dir, net_img_dir)
     
     list_file = os.listdir(src_dir)
     for f_name in list_file:
@@ -98,7 +100,7 @@ def process_all_files():
         if f_type not in file_types:
             continue
         original_file_path = os.path.join(src_dir, f_name)
-        oss_file_path = os.path.join(oss_dir, f_name)
+        oss_file_path = os.path.join(net_dir, f_name)
         local_file_path = os.path.join(local_dir, f_name)
         file_content = None
         with open(original_file_path, 'r', encoding='utf-8') as o_f:
@@ -109,7 +111,8 @@ def process_all_files():
                 failed_count += 1
             if not convert_pic_url_to_local(local_file_path, file_content):
                 failed_count += 1
-            
+
+    shutil.rmtree(net_img_dir) 
     return process_count, failed_count
 
 
@@ -155,7 +158,7 @@ def rename_and_upload_pic(c_f, fc, local_pic_urls):
         if len(split_arr) == 2:
             pic_name = split_arr[0][2:]
             local_pic_url = split_arr[1][1:-1].strip()
-            pic_path = os.path.join(src_dir, local_pic_url)
+            pic_path = os.path.join(src_dir, 'net', local_pic_url)
             new_path = pic_path
             if len(pic_name) > 0:
                 new_path = rename_pic_file(pic_path, pic_name)
@@ -203,7 +206,10 @@ def download_pic_and_rename(c_f, fc, oss_pic_urls):
         if len(split_arr) == 2:
             pic_pre_name = split_arr[0][2:]
             url = split_arr[1][1:-1].strip()
-            filename = pic_pre_name + url.split('.')[-1]
+            head, tail = os.path.split(url)
+            filename = tail
+            if len(pic_pre_name) > 0:
+                filename = pic_pre_name + '.' + url.split('.')[-1]
             filepath = os.path.join(img_full_dir, filename)
             if os.path.exists(filepath):
                 log_util.logger.info("图片文件已经存在，跳过！")
