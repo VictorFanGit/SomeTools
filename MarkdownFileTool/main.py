@@ -15,7 +15,6 @@ import time
 src_dir = None
 file_types = ['md']
 local_img_folder = None
-net_img_base_url = None
 
 backup_dir = None
 
@@ -26,7 +25,7 @@ local_pattern = None
 oss_pattern = None
 
 def load_config():
-    global src_dir, net_img_base_url, local_img_folder,backup_dir
+    global src_dir, local_img_folder,backup_dir
     with open(conf_path, 'r', encoding='utf-8') as f:
         json_data = json.load(f)
         print('===配置信息===')
@@ -35,7 +34,6 @@ def load_config():
             src_dir = os.path.dirname(__file__)
         else:
             src_dir = json_data['srcDir']
-        net_img_base_url = json_data['picBaseUrl']
         local_img_folder = json_data['imgDir']
         backup_dir = os.path.join(src_dir,"backup")
 
@@ -74,10 +72,10 @@ def move_orignal_files_to_backup():
 def process_all_files():
     process_count = 0
     failed_count = 0
-    global src_dir, file_types, local_img_folder, net_img_base_url,local_pattern,oss_pattern
+    global src_dir, file_types, local_img_folder,local_pattern,oss_pattern
 
     local_pattern = re.compile(r'\!\[[\S|\s]*\]\('+ local_img_folder + r'[\S|\s]+\)')
-    oss_pattern = re.compile(r'\!\[[\S|\s]*\]\(' + net_img_base_url + r'[\S|\s]+\)')
+    oss_pattern = re.compile(r'\!\[[\S|\s]*\]\(http[\s]*[\S|\s]+\)')
 
     net_dir = os.path.join(src_dir, 'net')
     local_dir = os.path.join(src_dir, 'local')

@@ -22,15 +22,11 @@
 
   "srcDir":"D:\\\test",
 
-  "picBaseUrl":"https://xxxx.oss-cn-shenzhen.aliyuncs.com",
-
   "imgDir":"img"
 
 配置项说明：
 
 - srcDir需要操作的目录，“.”表示当前目录
-
-- picBaseUrl网络图片存储基本地址，用于匹配查找文档中的网络图片地址
 
 - imgDir文档引用的本地图片目录，通常为“img”
 
@@ -76,3 +72,4 @@ python main.py
 - 2020-11-18：实现基本转换功能
 - 2020-11-19：优化图片上传处理
 - 2020-11-26：增加图片重命名功能
+- 2020-12-02: 修改图片链接匹配规则，去掉baseUrl配置项
