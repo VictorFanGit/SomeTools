@@ -54,7 +54,7 @@ https://github.com/Molunerfinn/PicGo/releases
 
 运行环境：python3.7及以上
 
-依赖包：requests （可用pip install requests 命令安装）
+依赖包：requests, psutil
 
 以上配置完成之后，在软件目录下执行：
 
@@ -73,3 +73,4 @@ python main.py
 - 2020-11-19：优化图片上传处理
 - 2020-11-26：增加图片重命名功能
 - 2020-12-02: 修改图片链接匹配规则，去掉baseUrl配置项
+- 2020-12-06: 增加对PicGo程序的检测

@@ -10,6 +10,7 @@ import urllib.request
 import urllib.parse
 import requests
 import time
+import psutil
 
 
 src_dir = None
@@ -244,17 +245,48 @@ def convert_pic_url_to_local(local_file_path, file_content):
     return isSuccess
 
 
+def proc_exist(process_name):
+    pl = psutil.pids()
+    for pid in pl:
+        if psutil.Process(pid).name() == process_name:
+            return pid
+
+def check_dependency_process():
+    if isinstance(proc_exist('PicGo.exe'),int):
+        return True
+    else:
+        return False
+
+def delete_old_generated_files(src_dir):
+    net_dir = os.path.join(src_dir, 'net')
+    local_dir = os.path.join(src_dir, 'local')
+    if os.path.isdir(net_dir):
+        shutil.rmtree(net_dir)
+    if os.path.isdir(local_dir):
+        shutil.rmtree(local_dir) 
+
+
 if __name__ == "__main__":
+    if not check_dependency_process():
+        print("请先运行PicGo！")
+        log_util.logger.error('请先运行PicGo！')
+        os.system('pause')
+        exit(1)
     load_config()
+    print("开始...")
     log_util.logger.info('开始...')
     if not os.path.isdir(src_dir):
         print('源目录不存在！')
         log_util.logger.error('源目录不存在！')
+        os.system('pause')
         exit(1)
+    delete_old_generated_files(src_dir)
     process_count, failed_count = process_all_files()
     # move_orignal_files_to_backup()
     print("处理文件总数：" + str(process_count))
     print("处理失败文件数：" + str(failed_count))
     log_util.logger.info("处理文件总数：" + str(process_count))
     log_util.logger.info("处理失败文件数：" + str(failed_count))
-
+    os.system('pause')
+ 
+ 
